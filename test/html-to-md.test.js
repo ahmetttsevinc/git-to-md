@@ -49,6 +49,6 @@ a++;
 | --- | --- |
 | 1 | 2 \\| 3 |
 
-[![shot](/uploads/x/s.png)](/uploads/x/s.png)`,
+![shot](/uploads/x/s.png)`,
   );
 });

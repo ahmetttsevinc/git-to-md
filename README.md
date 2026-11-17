@@ -1,8 +1,8 @@
 # git.to.md
 
-A Firefox extension that turns the GitLab issue or merge request you are looking at into **minimal Markdown**: content, attributes and comments, nothing else. Built for pasting into an LLM without burning context on UI noise.
+A Firefox extension that turns the **GitLab** or **GitHub** issue, merge request or pull request you are looking at into **minimal Markdown**: content, attributes and comments, nothing else. Built for pasting into an LLM without burning context on UI noise.
 
-Works on gitlab.com and **self-managed / on-prem GitLab** on any domain, with no setup and no tokens.
+Works on gitlab.com, github.com, **self-managed / on-prem GitLab** and **GitHub Enterprise** on any domain, with no setup and no tokens.
 
 ```markdown
 # Login fails on Safari
@@ -44,18 +44,23 @@ Typo here
 - Navigation, sidebars, buttons, avatars, emoji reactions, "edited by"
 - System notes ("added ~bug label", "changed milestone"), unless you turn them on
 - Issue-template HTML comments (`<!-- describe the bug -->`)
-- Images become `[image]` / `[image: alt text]`
+- Images (Markdown, `<img>`, `<picture>`, linked thumbnails) become `[image]` / `[image: alt text]`
+- Hidden/minimized comments (spam, off-topic) on GitHub
 - Empty attributes are not printed at all
 
 The popup shows an approximate token count for every copy.
 
 ## Usage
 
-1. Open an issue (`/-/issues/N`, `/-/work_items/N`) or merge request (`/-/merge_requests/N`).
+1. Open an issue or MR/PR:
+   - GitLab: `/-/issues/N`, `/-/work_items/N`, `/-/merge_requests/N`
+   - GitHub: `/issues/N`, `/pull/N`
 2. Click the toolbar button or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>.
 3. The Markdown is copied to your clipboard. You can also save it as a `.md` file.
 
 ## How it reads the data
+
+### GitLab
 
 There are two sources. You pick one in the settings; the default is **Auto**.
 
@@ -69,12 +74,21 @@ There are two sources. You pick one in the settings; the default is **Auto**.
 
 **Page (fallback).** Some on-prem setups block `/api` at a reverse proxy, or restrict what anonymous and session users can call. In that case the extension reads the issue straight from the rendered page and converts the HTML back to Markdown. GitLab's markup changes between versions, so this path tries several selectors for each field. If something is missing on your GitLab version, please open an issue with the version number.
 
+### GitHub
+
+GitHub is **always read from the open page, with no network requests at all**. (GitHub's API is on a different origin and does not accept your browser session, so private repos would need a token. We don't want your token.)
+
+- **Issues:** the page embeds its data, including the raw Markdown of the body and comments. That is used directly. If you clicked "Load more" on a long issue, the rendered comments are used instead. If items are still collapsed, the popup tells you.
+- **Pull requests:** title, branches and merge info come from the embedded data. Description and comments come from each comment's raw "Copy Markdown" text, falling back to converting the rendered HTML. Reviews ("approved", "changes requested") and inline review threads (with file path) are included.
+
 ## Privacy
 
 - **No data leaves your browser** except the same-origin requests to your own GitLab server described above.
 - No analytics, no telemetry, no remote code, no third-party servers.
 - Permissions: `activeTab` (only the tab where you click the button, only at that moment), `scripting`, `clipboardWrite`, `storage` (your settings).
 - No host permissions. The extension cannot read any site in the background.
+
+On GitHub, nothing at all is requested; the open page is only read.
 
 See [PRIVACY.md](PRIVACY.md).
 
@@ -84,7 +98,7 @@ There is no build step. The source is what ships.
 
 ```sh
 npm install
-npm test          # unit tests (formatter, URL parser, HTML → Markdown)
+npm test          # unit tests (formatter, URL parsers, HTML → Markdown, GitHub reader)
 npm run lint      # web-ext lint (AMO validator)
 npm start         # launch Firefox with the extension loaded
 npm run build     # dist/*.zip, ready to upload to addons.mozilla.org
@@ -97,9 +111,10 @@ manifest.json
 src/
   lib/format.js       API-shaped data → Markdown (pure, tested)
   lib/html-to-md.js   GitLab rendered HTML → Markdown (pure, tested)
-  lib/inject.js       Injected into the tab: GitLab detection + same-origin API fetch
-  lib/scrape.js       Injected into the tab: DOM fallback + normalisation
-  lib/url.js          Issue / MR URL parsing (relative URL roots supported)
+  lib/inject.js       Injected into the tab: GitLab/GitHub detection + GitLab same-origin API fetch
+  lib/scrape.js       Injected into the tab: GitLab DOM fallback + normalisation
+  lib/github.js       Injected into the tab: GitHub page reader + normalisation
+  lib/url.js          Issue / MR / PR URL parsing (GitLab relative URL roots supported)
   popup/              Toolbar popup
   options/            Settings page
 ```

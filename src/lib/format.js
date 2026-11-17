@@ -56,6 +56,8 @@ function issueAttributes(i, opt) {
     ["Milestone", milestone(i.milestone)],
     ["Iteration", i.iteration ? i.iteration.title || `#${i.iteration.iid}` : null],
     ["Epic", i.epic ? `${i.epic.title}${i.epic.reference ? ` (${i.epic.reference})` : ""}` : null],
+    ["Parent", i.parent],
+    ["Sub-issues", i.sub_issues],
     ["Due", i.due_date],
     ["Weight", i.weight ?? null],
     ["Health", i.health_status],
@@ -96,7 +98,8 @@ function formatLinks(links) {
     .map((l) => {
       const ref = l.references?.full || `#${l.iid}`;
       const rel = l.link_type && l.link_type !== "relates_to" ? `${l.link_type.replace(/_/g, " ")} ` : "";
-      return `${rel}${ref} ${oneLine(l.title)}${l.state === "closed" ? " (closed)" : ""}`;
+      const done = l.state === "closed" || l.state === "merged" ? ` (${l.state})` : "";
+      return `${rel}${ref} ${oneLine(l.title)}${done}`;
     })
     .join("; ");
 }
@@ -105,6 +108,7 @@ function formatLinks(links) {
 
 function formatDiscussions(discussions, opt) {
   const blocks = [];
+  let lastWasSystem = false;
   for (const d of discussions) {
     const notes = (d.notes || []).filter((n) => opt.includeSystemNotes || !n.system);
     if (!notes.length) continue;
@@ -114,12 +118,17 @@ function formatDiscussions(discussions, opt) {
     if (resolved && !opt.includeResolved) continue;
 
     if (notes[0].system) {
-      blocks.push(notes.map((n) => `- _${user(n.author)} ${oneLine(n.body)}${stamp(n, opt)}_`).join("\n"));
+      const lines = notes.map((n) => `- _${user(n.author)} ${oneLine(n.body)}${stamp(n, opt)}_`).join("\n");
+      // Consecutive system events form one tight list.
+      if (lastWasSystem) blocks[blocks.length - 1] += `\n${lines}`;
+      else blocks.push(lines);
+      lastWasSystem = true;
       continue;
     }
+    lastWasSystem = false;
 
     const [first, ...replies] = notes;
-    const head = [user(first.author) && `**${user(first.author)}**`, opt.includeTimestamps && date(first.created_at), position(first), resolved && "resolved"]
+    const head = [user(first.author) && `**${user(first.author)}**`, opt.includeTimestamps && date(first.created_at), position(first), first.review, resolved && "resolved"]
       .filter(Boolean)
       .join(" · ");
     // Blank line between header and body so a body that starts with bold text
@@ -153,7 +162,8 @@ function position(note) {
  */
 export function cleanBody(text, opt = DEFAULT_OPTIONS) {
   if (!text) return "";
-  const segments = splitFences(text.replace(/\r\n?/g, "\n"));
+  // Zero-width characters (GitHub adds them to wrap long paths) only cost tokens.
+  const segments = splitFences(text.replace(/\r\n?/g, "\n").replace(/[\u200B-\u200D\uFEFF]/g, ""));
   // Re-level headings so the body's top heading becomes ### (nested under
   // the document's # title and ## section), keeping relative structure.
   let shift = 0;
@@ -176,16 +186,23 @@ export function cleanBody(text, opt = DEFAULT_OPTIONS) {
 
 const HEADING = /^ {0,3}(#{1,6})(?=[ \t]|$)/gm;
 
+function imageLabel(alt) {
+  const a = String(alt || "").trim();
+  // Alt text that is just an auto-generated file name carries no meaning.
+  const fileLike = !/\s/.test(a) && (/\d{4,}/.test(a) || /[_-].*[_-]/.test(a) || /^(image|img|screenshot|pasted)/i.test(a));
+  return a && !fileLike ? `[image: ${a}]` : "[image]";
+}
+
 function cleanProse(text, opt, shift = 0) {
   let t = text;
   if (opt.stripHtmlComments) t = t.replace(/<!--[\s\S]*?-->/g, "");
   if (opt.stripImages) {
-    t = t.replace(/!\[([^\]]*)\]\([^)\s]*(?:\s+"[^"]*")?\)(\{[^}]*\})?/g, (_, alt) => {
-      const a = alt.trim();
-      // Alt text that is just an auto-generated file name carries no meaning.
-      const fileLike = !/\s/.test(a) && (/\d{4,}/.test(a) || /[_-].*[_-]/.test(a) || /^(image|img|screenshot|pasted)/i.test(a));
-      return a && !fileLike ? `[image: ${a}]` : "[image]";
-    });
+    t = t
+      // <picture><source srcset=…><img alt=…></picture>: keep only the <img>
+      .replace(/<\/?picture\b[^>]*>|<source\b[^>]*>/gi, "")
+      .replace(/!\[([^\]]*)\]\([^)\s]*(?:\s+"[^"]*")?\)(\{[^}]*\})?/g, (_, alt) => imageLabel(alt))
+      // Raw HTML images, e.g. GitHub's pasted <img width="…" alt="Image" src="…">
+      .replace(/<img\b[^>]*>/gi, (tag) => imageLabel(tag.match(/\balt\s*=\s*"([^"]*)"|\balt\s*=\s*'([^']*)'/i)?.slice(1).find((x) => x != null) || ""));
   }
   if (shift) {
     t = t.replace(HEADING, (_, h) => "#".repeat(Math.min(6, Math.max(1, h.length + shift))));

@@ -42,8 +42,17 @@ function block(node) {
 
 function text(node) {
   if (node.nodeType !== 3) return "";
-  return node.nodeValue.replace(/\s+/g, " ");
+  // GitHub inserts zero-width spaces into long paths so they can wrap.
+  return node.nodeValue.replace(/[​-‍﻿]/g, "").replace(/\s+/g, " ");
 }
+
+/** Wrap with a Markdown delimiter unless the text already carries it. */
+function wrap(t, d) {
+  if (!t) return "";
+  return t.startsWith(d) && t.endsWith(d) && t.length > d.length * 2 ? t : `${d}${t}${d}`;
+}
+
+const ALERT = /\bmarkdown-alert-(note|tip|important|warning|caution)\b/;
 
 function inlineChildren(node) {
   let s = "";
@@ -70,20 +79,22 @@ function element(el) {
     case "ARTICLE":
     case "FIGURE":
       return block(el);
-    case "DIV":
+    case "DIV": {
+      const alert = cls.match(ALERT);
+      if (alert) {
+        // GitHub alerts: <div class="markdown-alert markdown-alert-tip"><p class="markdown-alert-title">Tip</p>…
+        const clone = el.cloneNode(true);
+        clone.querySelector(".markdown-alert-title")?.remove();
+        return [`[!${alert[1].toUpperCase()}]`, ...block(clone).split("\n")].map((l) => (l ? `> ${l}` : ">")).join("\n");
+      }
       return block(el);
-    case "STRONG": case "B": {
-      const t = inlineChildren(el).trim();
-      return t ? `**${t}**` : "";
     }
-    case "EM": case "I": {
-      const t = inlineChildren(el).trim();
-      return t ? `_${t}_` : "";
-    }
-    case "DEL": case "S": {
-      const t = inlineChildren(el).trim();
-      return t ? `~~${t}~~` : "";
-    }
+    case "STRONG": case "B":
+      return wrap(inlineChildren(el).trim(), "**");
+    case "EM": case "I":
+      return wrap(inlineChildren(el).trim(), "_");
+    case "DEL": case "S":
+      return wrap(inlineChildren(el).trim(), "~~");
     case "CODE":
       return inlineCode(el.textContent);
     case "KBD":
@@ -110,7 +121,7 @@ function element(el) {
       const title = summary ? inlineChildren(summary).trim() : "Details";
       const clone = el.cloneNode(true);
       clone.querySelector(":scope > summary")?.remove();
-      return `**${title}**\n\n${block(clone)}`;
+      return `${wrap(title, "**")}\n\n${block(clone)}`;
     }
     case "SUMMARY":
       return "";
@@ -120,7 +131,7 @@ function element(el) {
 }
 
 function inlineCode(s) {
-  const t = String(s || "").replace(/\n/g, " ");
+  const t = String(s || "").replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\n/g, " ");
   if (!t) return "";
   const fence = t.includes("`") ? "``" : "`";
   return `${fence}${t}${fence}`;
@@ -138,12 +149,21 @@ function codeBlock(pre) {
 }
 
 function link(a) {
+  // A link that only wraps an image (GitHub/GitLab do this for every
+  // attachment) adds nothing but a long URL: keep just the image.
+  const imgs = a.querySelectorAll("img");
+  if (imgs.length === 1 && !a.textContent.trim()) return image(imgs[0]);
+
   const label = inlineChildren(a).trim();
   const href = a.getAttribute("href") || "";
   const cls = a.getAttribute("class") || "";
   // GitLab references (@user, #12, !34, ~label, %milestone) are self-describing.
-  if (/\bgfm\b/.test(cls) || !href || href.startsWith("#")) return label;
+  if (/\bgfm\b|\buser-mention\b|\bissue-link\b/.test(cls) || !href || href.startsWith("#")) return label;
   if (!label) return "";
+  // GitHub references: "#123", "owner/repo#123", "@user", "Full Name (@user)".
+  if (/^(?:[\w.-]+\/[\w.-]+)?#\d+$/.test(label) || /^@[\w-]+$/.test(label)) return label;
+  const mention = label.match(/\(@([\w-]+)\)$/);
+  if (mention) return `@${mention[1]}`;
   if (label === href || label === decodeURI(href)) return `<${href}>`;
   return `[${label}](${href})`;
 }

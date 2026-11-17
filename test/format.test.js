@@ -137,6 +137,7 @@ test("cleanBody respects options and unterminated fences", () => {
 
 test("parseGitLabUrl", () => {
   assert.deepEqual(parseGitLabUrl("https://gitlab.example.com/a/b/c/-/issues/12#note_3"), {
+    platform: "gitlab",
     origin: "https://gitlab.example.com",
     projectPath: "a/b/c",
     kind: "issue",

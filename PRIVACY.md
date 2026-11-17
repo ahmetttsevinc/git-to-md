@@ -2,14 +2,14 @@
 
 _Last updated: 2026-11-17_
 
-git.to.md does not collect, store, or send any personal data or any content of your GitLab instance to the developers or to any third party.
+git.to.md does not collect, store, or send any personal data or any content of your GitLab or GitHub instance to the developers or to any third party.
 
 ## What the extension does
 
-When you click the toolbar button on a GitLab issue or merge request page, the extension:
+When you click the toolbar button on a GitLab or GitHub issue, merge request or pull request page, the extension:
 
 1. Runs a script in **that tab only** (granted by Firefox's `activeTab` permission at the moment of the click).
-2. Depending on your settings, it either:
+2. On GitHub, it only reads the page that is already loaded. On GitLab, depending on your settings, it either:
    - sends `GET` requests to the **same GitLab server that is already open in the tab** (`/api/v4/projects/.../issues/...`) using your existing browser session, or
    - reads the issue from the page that is already loaded, without any network requests.
 3. Converts the result to Markdown and shows it in the popup. It copies the Markdown to your clipboard if you leave that setting on.

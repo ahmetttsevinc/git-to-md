@@ -1,5 +1,5 @@
 /*
- * Functions injected into the GitLab tab with scripting.executeScript.
+ * Functions injected into the tab with scripting.executeScript.
  *
  * They run in the page's MAIN world so that requests go to the same origin
  * with the user's existing GitLab session cookie. No tokens are needed or
@@ -7,15 +7,20 @@
  * access to module scope.
  */
 
-/** Detect GitLab and return the info needed to parse the URL. */
+/** Detect GitLab / GitHub and return the info needed to parse the URL. */
 export function probePage() {
   const gon = window.gon && typeof window.gon === "object" ? window.gon : null;
-  const markers =
+  const gitlab =
     !!gon ||
     !!document.querySelector("meta[property='og:site_name'][content='GitLab'], meta[content='GitLab'][name='application-name']") ||
     (document.body?.dataset?.page || "").startsWith("projects:");
+  const github =
+    !gitlab &&
+    !!document.querySelector(
+      "meta[property='og:site_name'][content^='GitHub'], meta[name='expected-hostname'], meta[name='octolytics-url'], meta[name='github-keyboard-shortcuts']",
+    );
   return {
-    isGitLab: markers,
+    platform: gitlab ? "gitlab" : github ? "github" : null,
     href: location.href,
     relativeRoot: gon?.relative_url_root || "",
     apiVersion: gon?.api_version || "v4",

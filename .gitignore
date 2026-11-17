@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.xpi
+*.zip
+.web-extension-id

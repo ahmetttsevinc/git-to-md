@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "git.to.md — GitLab Issue to Markdown",
+  "short_name": "git.to.md",
+  "version": "0.1.0",
+  "description": "Turn the GitLab issue or merge request you are viewing into minimal, LLM-friendly Markdown: content, attributes and comments only.",
+  "homepage_url": "https://github.com/ahmetttsevinc/git.to.md",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
+  "action": {
+    "default_title": "Copy as Markdown",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": false
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+M" },
+      "description": "Open git.to.md"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{1d52370c-0194-4248-b1c8-be284673c4a2}",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}

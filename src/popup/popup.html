@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>git.to.md</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="popup.js"></script>
+  </head>
+  <body>
+    <header>
+      <strong>git.to.md</strong>
+      <span id="status" role="status" aria-live="polite">Loading…</span>
+      <button id="settings" class="icon" title="Settings" aria-label="Settings">⚙</button>
+    </header>
+    <main>
+      <p id="message" hidden></p>
+      <textarea id="output" spellcheck="false" readonly hidden aria-label="Markdown output"></textarea>
+    </main>
+    <footer>
+      <span id="stats"></span>
+      <div class="actions">
+        <button id="download" disabled>Save .md</button>
+        <button id="copy" class="primary" disabled>Copy</button>
+      </div>
+    </footer>
+  </body>
+</html>

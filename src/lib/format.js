@@ -122,11 +122,13 @@ function formatDiscussions(discussions, opt) {
     const head = [user(first.author) && `**${user(first.author)}**`, opt.includeTimestamps && date(first.created_at), position(first), resolved && "resolved"]
       .filter(Boolean)
       .join(" · ");
-    const parts = [head, cleanBody(first.body, opt)];
+    // Blank line between header and body so a body that starts with bold text
+    // does not read as part of the header.
+    const parts = [head, "", cleanBody(first.body, opt)];
     for (const r of replies) {
       const rh = `**${user(r.author)}**${stamp(r, opt, " · ")}`;
       const body = r.system ? `_${oneLine(r.body)}_` : cleanBody(r.body, opt);
-      parts.push("", quote(`${rh}\n${body}`));
+      parts.push("", quote(`${rh}\n\n${body}`));
     }
     blocks.push(parts.join("\n").trim());
   }
@@ -152,8 +154,17 @@ function position(note) {
 export function cleanBody(text, opt = DEFAULT_OPTIONS) {
   if (!text) return "";
   const segments = splitFences(text.replace(/\r\n?/g, "\n"));
+  // Re-level headings so the body's top heading becomes ### (nested under
+  // the document's # title and ## section), keeping relative structure.
+  let shift = 0;
+  if (opt.demoteHeadings) {
+    const levels = segments
+      .filter((s) => !s.code)
+      .flatMap((s) => [...s.text.matchAll(HEADING)].map((m) => m[1].length));
+    if (levels.length) shift = 3 - Math.min(...levels);
+  }
   const cleaned = segments
-    .map((s) => (s.code ? s.text : cleanProse(s.text, opt)))
+    .map((s) => (s.code ? s.text : cleanProse(s.text, opt, shift)))
     .join("");
   return cleaned
     .split("\n")
@@ -163,7 +174,9 @@ export function cleanBody(text, opt = DEFAULT_OPTIONS) {
     .trim();
 }
 
-function cleanProse(text, opt) {
+const HEADING = /^ {0,3}(#{1,6})(?=[ \t]|$)/gm;
+
+function cleanProse(text, opt, shift = 0) {
   let t = text;
   if (opt.stripHtmlComments) t = t.replace(/<!--[\s\S]*?-->/g, "");
   if (opt.stripImages) {
@@ -174,8 +187,8 @@ function cleanProse(text, opt) {
       return a && !fileLike ? `[image: ${a}]` : "[image]";
     });
   }
-  if (opt.demoteHeadings) {
-    t = t.replace(/^(#{1,6})(?=\s)/gm, (h) => "#".repeat(Math.min(6, h.length + 2)));
+  if (shift) {
+    t = t.replace(HEADING, (_, h) => "#".repeat(Math.min(6, Math.max(1, h.length + shift))));
   }
   return t;
 }

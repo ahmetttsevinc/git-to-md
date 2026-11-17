@@ -80,12 +80,15 @@ Thanks
 ## Comments
 
 **@bob** · 2026-11-02
+
 Repro'd on 17.1
 
 > **@carol** · 2026-11-02
+>
 > Same here
 
 **@dave** · 2026-11-03 · \`src/login.js:12\` · resolved
+
 Typo here
 `,
   );
@@ -128,7 +131,8 @@ test("cleanBody respects options and unterminated fences", () => {
   assert.equal(cleanBody("![](x.png)", DEFAULT_OPTIONS), "[image]");
   assert.equal(cleanBody("![a](x.png)", { ...DEFAULT_OPTIONS, stripImages: false }), "![a](x.png)");
   assert.equal(cleanBody("```\n<!-- x -->", DEFAULT_OPTIONS), "```\n<!-- x -->");
-  assert.equal(cleanBody("###### h", DEFAULT_OPTIONS), "###### h");
+  assert.equal(cleanBody("###### h", DEFAULT_OPTIONS), "### h");
+  assert.equal(cleanBody("## h", { ...DEFAULT_OPTIONS, demoteHeadings: false }), "## h");
 });
 
 test("parseGitLabUrl", () => {
@@ -147,4 +151,13 @@ test("parseGitLabUrl", () => {
 
 test("file-name alt text collapses to [image]", () => {
   assert.equal(cleanBody("![PXL_20260917_185012205.MP](/u/a.jpg) ![Login form](/u/b.png)"), "[image] [image: Login form]");
+});
+
+test("headings are re-levelled relative to the body's top heading", () => {
+  assert.equal(
+    cleanBody("## Issue\ntext\n### Expected\n#### Detail\n```\n# code\n```"),
+    "### Issue\ntext\n#### Expected\n##### Detail\n```\n# code\n```",
+  );
+  assert.equal(cleanBody("#### Deep only\n###### deeper"), "### Deep only\n##### deeper");
+  assert.equal(cleanBody("#2965 is not a heading"), "#2965 is not a heading");
 });

@@ -27,12 +27,15 @@ Works on gitlab.com and **self-managed / on-prem GitLab** on any domain, with no
 ## Comments
 
 **@bob** · 2026-11-02
+
 Repro'd on 17.1
 
 > **@carol** · 2026-11-02
+>
 > Same here
 
 **@dave** · 2026-11-03 · `src/login.js:12` · resolved
+
 Typo here
 ```
 

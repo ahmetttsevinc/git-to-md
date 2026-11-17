@@ -1,6 +1,6 @@
 # addons.mozilla.org submission notes
 
-**Name:** git.to.md: Issue to Markdown (GitLab/GitHub) (max 45 chars)
+**Name:** git-to-md: Issue to Markdown (GitLab/GitHub) (max 45 chars)
 **Summary (≤250):** Copy the GitLab or GitHub issue / pull request you are viewing as clean, minimal Markdown: content, attributes and comments only. Made for pasting into LLMs. Works with self-hosted GitLab and GitHub Enterprise.
 **Categories:** Developer Tools
 **License:** MIT

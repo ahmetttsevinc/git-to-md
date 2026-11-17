@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-17_
 
-git.to.md does not collect, store, or send any personal data or any content of your GitLab or GitHub instance to the developers or to any third party.
+git-to-md does not collect, store, or send any personal data or any content of your GitLab or GitHub instance to the developers or to any third party.
 
 ## What the extension does
 

@@ -1,4 +1,4 @@
-# git.to.md
+# git-to-md
 
 A Firefox extension that turns the **GitLab** or **GitHub** issue, merge request or pull request you are looking at into **minimal Markdown**: content, attributes and comments, nothing else. Built for pasting into an LLM without burning context on UI noise.
 

@@ -4,7 +4,7 @@
   "short_name": "git.to.md",
   "version": "0.1.0",
   "description": "Turn the GitLab or GitHub issue, merge request or pull request you are viewing into minimal, LLM-friendly Markdown: content, attributes and comments only.",
-  "homepage_url": "https://github.com/ahmetttsevinc/git.to.md",
+  "homepage_url": "https://github.com/ahmetttsevinc/git-to-md",
   "icons": {
     "48": "icons/icon-48.png",
     "96": "icons/icon-96.png",

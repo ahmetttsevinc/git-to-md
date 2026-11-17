@@ -27,4 +27,4 @@ Only your settings (checkbox choices), in Firefox's `storage.sync`. If you use F
 
 ## Contact
 
-Open an issue in the project's GitHub repository.
+Open an issue at https://github.com/ahmetttsevinc/git-to-md/issues
